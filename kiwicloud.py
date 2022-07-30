@@ -39,7 +39,6 @@ inuse_idle = 0
 print("Kiwi Server is: " + kiwiserverurl)
 
 
-# noinspection PyPep8Naming
 class db:
     def __init__(self, filename):
         self.filename = filename
@@ -75,7 +74,7 @@ class db:
         return conhash
 
     def readQrgFrequency(self):
-        self.cursor.execute("SELECT frequency, counter FROM qrgstat")
+        self.cursor.execute("SELECT frequency || ' ' || upper(mode), counter FROM qrgstat LIMIT 15")
         data = self.cursor.fetchall()
         return dict(data)
 
@@ -95,7 +94,8 @@ def get_json(url):
 
 
 def create_cloud(filename, qrgs):
-    cloud = WordCloud(width=860, height=300, background_color="white").generate_from_frequencies(dict(qrgs))
+    # colormaps from matplotlib: ['viridis', 'plasma', 'inferno', 'magma', 'cividis'])
+    cloud = WordCloud(width=860, height=300, background_color="white", colormap='plasma').generate_from_frequencies(dict(qrgs))
     cloud.to_file(filename)
 
 
