@@ -39,6 +39,7 @@ inuse_idle = 0
 print("Kiwi Server is: " + kiwiserverurl)
 
 
+# noinspection PyPep8Naming
 class db:
     def __init__(self, filename):
         self.filename = filename
@@ -102,7 +103,7 @@ sqlitepath = pathlib.Path(filename)
 
 database = db(sqlitepath)
 
-while (1):
+while 1:
     now = datetime.datetime.now()
     print("----->", now.strftime("%H:%M:%S"))
 
@@ -110,7 +111,7 @@ while (1):
     cont = json.loads(jdata.content.decode())
     for item in cont:
         counter += 1
-        if not item.get('f') == None:
+        if not item.get('f') is None:
             # slot is in use
             print("Slot ", item.get('i'), " in use by ", item.get('n'))
             if item.get('n') == ident_skimmer:
