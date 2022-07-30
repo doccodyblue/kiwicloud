@@ -28,9 +28,9 @@ kiwiserverurl = "http://" + host + ":" + str(port) + "/users"
 
 # this is to prevent me getting added to the statistics
 # todo turn this into a blacklist
-ident_skimmer = "digiskr_0.35.1"
-ident_myself = "dg7lan"
-
+ident_blacklist = ["digiskr_0.35.1", "SNR-measure", "dg7lan"]
+ident_skimmer = "digiskr_0.35."
+frequency_blacklist = [6160, 30000]
 counter = 0
 inuse_human = 0
 inuse_skimmer = 0
@@ -115,7 +115,7 @@ while 1:
         if not item.get('f') is None:
             # slot is in use
             print("Slot ", item.get('i'), " in use by ", item.get('n'))
-            if item.get('n') == ident_skimmer:
+            if item.get('n') in ident_skimmer:
                 inuse_skimmer += 1
             else:
                 inuse_human += 1
@@ -130,7 +130,7 @@ while 1:
                 slot = item.get('i')
 
                 # todo: blacklist initialfrequency shouldnt be fixed 6160!
-                if not username == ident_myself and not frequency == 6160:
+                if not username in ident_blacklist and not frequency in frequency_blacklist:
                     conhash = database.add(slot, frequency, mode, username=username, location=geo, extension=extension)
         else:
             print("Slot ", item.get('i'), "is idle")
