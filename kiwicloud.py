@@ -4,6 +4,7 @@ import pathlib
 import sqlite3
 import urllib.parse
 import time
+import datetime
 import uuid
 from wordcloud import WordCloud
 from optparse import OptionParser
@@ -25,6 +26,7 @@ host = options['server']
 port = options['port']
 kiwiserverurl = "http://" + host + ":" + str(port) + "/users"
 
+# this is to prevent me getting added to the statistics
 # todo turn this into a blacklist
 ident_skimmer = "digiskr_0.35.1"
 ident_myself = "dg7lan"
@@ -33,7 +35,6 @@ counter = 0
 inuse_human = 0
 inuse_skimmer = 0
 inuse_idle = 0
-
 
 print("Kiwi Server is: " + kiwiserverurl)
 
@@ -87,7 +88,6 @@ class db:
         self.conn.execute("CREATE TABLE IF NOT EXISTS qrgstat (frequency TEXT(5), mode TEXT(5), counter INTEGER(12))")
         self.conn.execute("CREATE TABLE IF NOT EXISTS userstat (user TEXT(15), counter INTEGER(12))")
 
-        print("Tables created successfully")
 
 
 def get_json(url):
@@ -103,7 +103,9 @@ sqlitepath = pathlib.Path(filename)
 database = db(sqlitepath)
 
 while (1):
-    print("----->")
+    now = datetime.datetime.now()
+    print("----->", now.strftime("%H:%M:%S"))
+
     jdata = get_json(kiwiserverurl)
     cont = json.loads(jdata.content.decode())
     for item in cont:
