@@ -54,7 +54,8 @@ class db:
         self.cursor.execute("SELECT counter FROM qrgstat WHERE frequency = ?", (str(frequency),))
         data = self.cursor.fetchone()
         if data is None:
-            self.conn.execute("INSERT INTO qrgstat (frequency, mode, counter) VALUES (?, ?, 1)", (str(frequency),str(mode)))
+            self.conn.execute("INSERT INTO qrgstat (frequency, mode, counter) VALUES (?, ?, 1)",
+                              (str(frequency), str(mode)))
         else:
             print("adding")
             self.conn.execute("UPDATE qrgstat SET counter = counter +1 WHERE frequency = ?", (str(frequency),))
@@ -72,7 +73,6 @@ class db:
             self.conn.commit()
         return conhash
 
-
     def readQrgFrequency(self):
         self.cursor.execute("SELECT frequency, counter FROM qrgstat")
         data = self.cursor.fetchall()
@@ -83,20 +83,20 @@ class db:
         data = self.cursor.fetchall()
         return dict(data)
 
-
     def newDB(self):
         self.conn.execute("CREATE TABLE IF NOT EXISTS qrgstat (frequency TEXT(5), mode TEXT(5), counter INTEGER(12))")
         self.conn.execute("CREATE TABLE IF NOT EXISTS userstat (user TEXT(15), counter INTEGER(12))")
-
 
 
 def get_json(url):
     r = requests.get(url=url)
     return r
 
+
 def create_cloud(filename, qrgs):
     cloud = WordCloud(width=860, height=300, background_color="white").generate_from_frequencies(dict(qrgs))
     cloud.to_file(filename)
+
 
 sqlitepath = pathlib.Path(filename)
 
@@ -112,7 +112,7 @@ while (1):
         counter += 1
         if not item.get('f') == None:
             # slot is in use
-            print("Slot ",item.get('i'), " in use by ", item.get('n'))
+            print("Slot ", item.get('i'), " in use by ", item.get('n'))
             if item.get('n') == ident_skimmer:
                 inuse_skimmer += 1
             else:
@@ -120,7 +120,7 @@ while (1):
                 username = item.get('n')
                 if username == "":
                     username = "unknown"
-                frequency = int(item.get('f')/1000)
+                frequency = int(item.get('f') / 1000)
                 geo = item.get('g')
                 geo = urllib.parse.unquote(geo)
                 mode = item.get('m')
@@ -137,14 +137,9 @@ while (1):
     qrgdata = database.readQrgFrequency()
     userdata = database.readUserData()
 
-
     if qrgdata:
         create_cloud("qrgcloud.png", qrgdata)
     if userdata:
         create_cloud("usercloud.png", userdata)
 
     time.sleep(30)
-
-
-
-
