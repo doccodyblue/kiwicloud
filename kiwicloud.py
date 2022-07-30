@@ -47,7 +47,7 @@ class db:
 
         self.newDB()
 
-    def add(self, slot, frequency, mode, username, usertype, location="", extension=""):
+    def add(self, slot, frequency, mode, username, location="", extension=""):
         print(username, frequency, geo, mode)
         conhash = str(uuid.uuid4())[:8]
 
@@ -66,9 +66,10 @@ class db:
         data = self.cursor.fetchone()
         if not username == "unknown":
             if data is None:
-                self.conn.execute("INSERT INTO userstat (user, counter) VALUES (?, 1)", (str(username),))
+                self.conn.execute("INSERT INTO userstat (user, geo, extension, counter) VALUES (?, ?, ?, 1)", (str(username), str(location), str(extension)))
             else:
                 self.conn.execute("UPDATE userstat SET counter = counter +1 WHERE user = ?", (str(username),))
+                self.conn.execute("UPDATE userstat SET geo, extension VALUES (?, ?)", (str(location), str(extension)))
 
             self.conn.commit()
         return conhash
@@ -85,7 +86,7 @@ class db:
 
     def newDB(self):
         self.conn.execute("CREATE TABLE IF NOT EXISTS qrgstat (frequency TEXT(5), mode TEXT(5), counter INTEGER(12))")
-        self.conn.execute("CREATE TABLE IF NOT EXISTS userstat (user TEXT(15), counter INTEGER(12))")
+        self.conn.execute("CREATE TABLE IF NOT EXISTS userstat (user TEXT(15), geo TEXT(40), extension TEXT(10), counter INTEGER(12))")
 
 
 def get_json(url):
@@ -130,7 +131,7 @@ while 1:
 
                 # todo: blacklist initialfrequency shouldnt be fixed 6160!
                 if not username == ident_myself and not frequency == 6160:
-                    conhash = database.add(slot, frequency, mode, username, geo, extension)
+                    conhash = database.add(slot, frequency, mode, username=username, location=geo, extension=extension)
         else:
             print("Slot ", item.get('i'), "is idle")
             inuse_idle += 1
