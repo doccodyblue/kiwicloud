@@ -69,7 +69,7 @@ class db:
                 self.conn.execute("INSERT INTO userstat (user, geo, extension, counter) VALUES (?, ?, ?, 1)", (str(username), str(location), str(extension)))
             else:
                 self.conn.execute("UPDATE userstat SET counter = counter +1 WHERE user = ?", (str(username),))
-                self.conn.execute("UPDATE userstat SET geo, extension VALUES (?, ?)", (str(location), str(extension)))
+                self.conn.execute("UPDATE userstat SET geo = ?, extension = ? WHERE user = ?", (location, extension, username))
 
             self.conn.commit()
         return conhash
