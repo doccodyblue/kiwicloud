@@ -31,6 +31,7 @@ kiwiserverurl = "http://" + host + ":" + str(port) + "/users"
 ident_blacklist = ["digiskr_0.35.1", "SNR-measure", "dg7lan"]
 ident_skimmer = "digiskr_0.35."
 frequency_blacklist = [6160, 30000]
+debug = True
 counter = 0
 inuse_human = 0
 inuse_skimmer = 0
@@ -48,7 +49,8 @@ class db:
         self.newDB()
 
     def add(self, slot, frequency, mode, username, location="", extension=""):
-        print(username, frequency, geo, mode)
+        if debug:
+            print("add DB:", username, frequency, geo, mode)
         conhash = str(uuid.uuid4())[:8]
 
         self.cursor.execute("SELECT counter FROM qrgstat WHERE frequency = ?", (str(frequency),))
@@ -57,19 +59,19 @@ class db:
             self.conn.execute("INSERT INTO qrgstat (frequency, mode, counter) VALUES (?, ?, 1)",
                               (str(frequency), str(mode)))
         else:
-            print("adding")
+            print("|----> adding to", frequency)
             self.conn.execute("UPDATE qrgstat SET counter = counter +1 WHERE frequency = ?", (str(frequency),))
 
         self.conn.commit()
 
-        self.cursor.execute("SELECT counter FROM userstat WHERE user = ?", (str(username),))
+        self.cursor.execute("SELECT counter FROM userstat WHERE user = ?", (str(username.lower()),))
         data = self.cursor.fetchone()
         if not username == "unknown":
             if data is None:
-                self.conn.execute("INSERT INTO userstat (user, geo, extension, counter) VALUES (?, ?, ?, 1)", (str(username), str(location), str(extension)))
+                self.conn.execute("INSERT INTO userstat (user, geo, extension, counter) VALUES (?, ?, ?, 1)", (str(username.lower()), str(location), str(extension)))
             else:
-                self.conn.execute("UPDATE userstat SET counter = counter +1 WHERE user = ?", (str(username),))
-                self.conn.execute("UPDATE userstat SET geo = ?, extension = ? WHERE user = ?", (location, extension, username))
+                self.conn.execute("UPDATE userstat SET counter = counter +1 WHERE user = ?", (username.lower(),))
+                self.conn.execute("UPDATE userstat SET geo = ?, extension = ? WHERE user = ?", (location, extension, username.lower()))
 
             self.conn.commit()
         return conhash
@@ -106,7 +108,7 @@ database = db(sqlitepath)
 
 while 1:
     now = datetime.datetime.now()
-    print("----->", now.strftime("%H:%M:%S"))
+    print("|--->", now.strftime("%H:%M:%S"))
 
     jdata = get_json(kiwiserverurl)
     cont = json.loads(jdata.content.decode())
@@ -114,14 +116,19 @@ while 1:
         counter += 1
         if not item.get('f') is None:
             # slot is in use
-            print("Slot ", item.get('i'), " in use by ", item.get('n'))
-            if item.get('n') in ident_skimmer:
+            username = item.get('n')
+            if username == "":
+                username = "unknown"
+            printqrg = int(item.get('f')/1000)
+            print("Slot", item.get('i'), "on", printqrg, "in use by", item.get('n') )
+            #print("{:10.4f}".format(x))
+            if item.get('n') in ident_skimmer and len(item.get('n')) >0:
                 inuse_skimmer += 1
+                if debug:
+                    print("SKIMMER")
+                    print(item.get('n'))
             else:
                 inuse_human += 1
-                username = item.get('n')
-                if username == "":
-                    username = "unknown"
                 frequency = int(item.get('f') / 1000)
                 geo = item.get('g')
                 geo = urllib.parse.unquote(geo)
@@ -132,8 +139,11 @@ while 1:
                 # todo: blacklist initialfrequency shouldnt be fixed 6160!
                 if not username in ident_blacklist and not frequency in frequency_blacklist:
                     conhash = database.add(slot, frequency, mode, username=username, location=geo, extension=extension)
+                else:
+                    if debug:
+                        print(username," / ", frequency," prevented due blacklist")
         else:
-            print("Slot ", item.get('i'), "is idle")
+            print("Slot", item.get('i'), "is idle")
             inuse_idle += 1
 
     qrgdata = database.readQrgFrequency()
