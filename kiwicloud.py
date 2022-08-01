@@ -30,7 +30,7 @@ kiwiserverurl = "http://" + host + ":" + str(port) + "/users"
 # todo turn this into a blacklist
 ident_blacklist = ["digiskr_0.35.1", "SNR-measure", "dg7lan"]
 ident_skimmer = "digiskr_0.35."
-extension_modes = ["drm", "fax", "wspr","fsk"]
+extension_modes = ["drm", "fax", "wspr", "fsk"]
 frequency_blacklist = [6160, 30000]
 debug = True
 counter = 0
@@ -65,6 +65,20 @@ class db:
 
         self.conn.commit()
 
+        self.cursor.execute("SELECT counter FROM geostat WHERE geo = ?",
+                            (geo,))
+
+        data = self.cursor.fetchone()
+        if data is None:
+            self.conn.execute("INSERT INTO geostat (geo, counter) VALUES (?, 1)",
+                              (geo,))
+        else:
+            print("|----> adding to", geo)
+            self.conn.execute("UPDATE geostat SET counter = counter +1 WHERE geo = ?",
+                              (geo,))
+
+        self.conn.commit()
+
         self.cursor.execute("SELECT counter FROM userstat WHERE user = ?", (str(username.lower()),))
         data = self.cursor.fetchone()
         if not username == "unknown":
@@ -87,9 +101,15 @@ class db:
         data = self.cursor.fetchall()
         return dict(data)
 
+    def readGeoData(self):
+        self.cursor.execute("SELECT geo, counter FROM geostat")
+        data = self.cursor.fetchall()
+        return dict(data)
+
     def newDB(self):
         self.conn.execute("CREATE TABLE IF NOT EXISTS qrgstat (frequency TEXT(5), mode TEXT(5), counter INTEGER(12))")
         self.conn.execute("CREATE TABLE IF NOT EXISTS userstat (user TEXT(15), geo TEXT(40), extension TEXT(10), counter INTEGER(12))")
+        self.conn.execute("CREATE TABLE IF NOT EXISTS geostat (geo TEXT(40), counter INTEGER(12))")
 
 
 def get_json(url):
@@ -109,7 +129,7 @@ database = db(sqlitepath)
 
 while 1:
     now = datetime.datetime.now()
-    print("|--->", now.strftime("%H:%M:%S"))
+    print("|---------->", now.strftime("%H:%M:%S"))
 
     jdata = get_json(kiwiserverurl)
     cont = json.loads(jdata.content.decode())
@@ -154,10 +174,11 @@ while 1:
 
     qrgdata = database.readQrgFrequency()
     userdata = database.readUserData()
-
+    geodata = database.readGeoData()
     if qrgdata:
         create_cloud("qrgcloud.png", qrgdata)
     if userdata:
         create_cloud("usercloud.png", userdata)
-
+    if geodata:
+        create_cloud("geocloud.png", geodata)
     time.sleep(30)
