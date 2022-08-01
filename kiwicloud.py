@@ -54,14 +54,14 @@ class db:
             print("add DB:", username, frequency, geo, mode)
         conhash = str(uuid.uuid4())[:8]
 
-        self.cursor.execute("SELECT counter FROM qrgstat WHERE frequency = ?", (str(frequency),))
+        self.cursor.execute("SELECT counter FROM qrgstat WHERE frequency = ? AND mode = ?", (str(frequency),mode.lower()))
         data = self.cursor.fetchone()
         if data is None:
             self.conn.execute("INSERT INTO qrgstat (frequency, mode, counter) VALUES (?, ?, 1)",
-                              (str(frequency), str(mode)))
+                              (frequency, mode.lower()))
         else:
             print("|----> adding to", frequency)
-            self.conn.execute("UPDATE qrgstat SET counter = counter +1 WHERE frequency = ?", (str(frequency),))
+            self.conn.execute("UPDATE qrgstat SET counter = counter +1 WHERE frequency = ? AND mode = ?", (str(frequency), mode.lower()))
 
         self.conn.commit()
 
@@ -78,12 +78,12 @@ class db:
         return conhash
 
     def readQrgFrequency(self):
-        self.cursor.execute("SELECT frequency || ' ' || upper(mode), counter FROM qrgstat LIMIT 15")
+        self.cursor.execute("SELECT frequency || ' ' || upper(mode), counter FROM qrgstat LIMIT 12")
         data = self.cursor.fetchall()
         return dict(data)
 
     def readUserData(self):
-        self.cursor.execute("SELECT user, counter FROM userstat")
+        self.cursor.execute("SELECT upper(user), counter FROM userstat")
         data = self.cursor.fetchall()
         return dict(data)
 
@@ -141,7 +141,7 @@ while 1:
                 if not username in ident_blacklist and not frequency in frequency_blacklist:
                     if extension in extension_modes and len(extension) > 0:
                         if debug:
-                            print("swapped mode ", mode, "for", extension)
+                            print("swapped mode", mode, "for", extension)
                         mode = extension.upper()
 
                     conhash = database.add(slot, frequency, mode, username=username, location=geo, extension=extension)
