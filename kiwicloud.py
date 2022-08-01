@@ -30,6 +30,7 @@ kiwiserverurl = "http://" + host + ":" + str(port) + "/users"
 # todo turn this into a blacklist
 ident_blacklist = ["digiskr_0.35.1", "SNR-measure", "dg7lan"]
 ident_skimmer = "digiskr_0.35."
+extension_modes = ["drm", "fax", "wspr","fsk"]
 frequency_blacklist = [6160, 30000]
 debug = True
 counter = 0
@@ -132,12 +133,17 @@ while 1:
                 frequency = int(item.get('f') / 1000)
                 geo = item.get('g')
                 geo = urllib.parse.unquote(geo)
-                mode = item.get('m')
-                extension = item.get('e')
+                mode = item.get('m').lower()
+                extension = item.get('e').lower()
                 slot = item.get('i')
 
                 # todo: blacklist initialfrequency shouldnt be fixed 6160!
                 if not username in ident_blacklist and not frequency in frequency_blacklist:
+                    if extension in extension_modes and len(extension) > 0:
+                        if debug:
+                            print("swapped mode ", mode, "for", extension)
+                        mode = extension.upper()
+
                     conhash = database.add(slot, frequency, mode, username=username, location=geo, extension=extension)
                 else:
                     if debug:
