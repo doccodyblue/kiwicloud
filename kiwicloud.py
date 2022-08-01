@@ -6,6 +6,7 @@ import urllib.parse
 import time
 import datetime
 import uuid
+import os
 from wordcloud import WordCloud
 from optparse import OptionParser
 
@@ -29,7 +30,7 @@ kiwiserverurl = "http://" + host + ":" + str(port) + "/users"
 # this is to prevent me getting added to the statistics
 # todo turn this into a blacklist
 ident_blacklist = ["digiskr_0.35.1", "SNR-measure", "dg7lan"]
-ident_skimmer = "digiskr_0.35."
+ident_skimmer = "digiskr_0.35.1"
 extension_modes = ["drm", "fax", "wspr", "fsk"]
 frequency_blacklist = [6160, 30000]
 debug = True
@@ -51,7 +52,7 @@ class db:
 
     def add(self, slot, frequency, mode, username, location="", extension=""):
         if debug:
-            print("add DB:", username, frequency, geo, mode)
+            print("|----> adding to QRGstat:", username, frequency, geo, mode)
         conhash = str(uuid.uuid4())[:8]
 
         self.cursor.execute("SELECT counter FROM qrgstat WHERE frequency = ? AND mode = ?", (str(frequency),mode.lower()))
@@ -60,7 +61,7 @@ class db:
             self.conn.execute("INSERT INTO qrgstat (frequency, mode, counter) VALUES (?, ?, 1)",
                               (frequency, mode.lower()))
         else:
-            print("|----> adding to", frequency)
+            print("|----> adding to QRGstat:", frequency)
             self.conn.execute("UPDATE qrgstat SET counter = counter +1 WHERE frequency = ? AND mode = ?", (str(frequency), mode.lower()))
 
         self.conn.commit()
@@ -73,7 +74,7 @@ class db:
             self.conn.execute("INSERT INTO geostat (geo, counter) VALUES (?, 1)",
                               (geo,))
         else:
-            print("|----> adding to", geo)
+            print("|----> adding to GEOstat:", geo)
             self.conn.execute("UPDATE geostat SET counter = counter +1 WHERE geo = ?",
                               (geo,))
 
@@ -128,6 +129,7 @@ sqlitepath = pathlib.Path(filename)
 database = db(sqlitepath)
 
 while 1:
+    os.system('clear')
     now = datetime.datetime.now()
     print("|---------->", now.strftime("%H:%M:%S"))
 
@@ -141,13 +143,11 @@ while 1:
             if username == "":
                 username = "unknown"
             printqrg = int(item.get('f')/1000)
-            print("Slot", item.get('i'), "on", printqrg, "in use by", item.get('n') )
+            print("Slot", item.get('i'), "on", printqrg, "in use by", username)
             #print("{:10.4f}".format(x))
             if item.get('n') in ident_skimmer and len(item.get('n')) >0:
                 inuse_skimmer += 1
-                if debug:
-                    print("SKIMMER")
-                    print(item.get('n'))
+
             else:
                 inuse_human += 1
                 frequency = int(item.get('f') / 1000)
@@ -161,13 +161,13 @@ while 1:
                 if not username in ident_blacklist and not frequency in frequency_blacklist:
                     if extension in extension_modes and len(extension) > 0:
                         if debug:
-                            print("swapped mode", mode, "for", extension)
+                            print("|----> swapped mode", mode, "for", extension)
                         mode = extension.upper()
 
                     conhash = database.add(slot, frequency, mode, username=username, location=geo, extension=extension)
                 else:
                     if debug:
-                        print(username," / ", frequency," prevented due blacklist")
+                        print("|---->", username, " / ", frequency," prevented due blacklist")
         else:
             print("Slot", item.get('i'), "is idle")
             inuse_idle += 1
