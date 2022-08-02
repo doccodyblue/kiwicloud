@@ -45,7 +45,6 @@ frequency_blacklist = [6160, 30000]
 
 # wait n seconds between polling data - don't recommend setting it to less than 30s
 polldelay = 30
-debug = True
 
 # don't change below
 counter = 0
