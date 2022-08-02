@@ -27,11 +27,11 @@ host = options['server']
 port = options['port']
 kiwiserverurl = "http://" + host + ":" + str(port) + "/users"
 
-# this is to prevent me getting added to the statistics
-# todo turn this into a blacklist
+# this is to prevent getting specific things into the statistics
+# i.e. skimmer, you own call, ...
 ident_blacklist = ["digiskr_0.35.1", "SNR-measure", "dg7lan"]
 ident_skimmer = "digiskr_0.35.1"
-extension_modes = ["drm", "fax", "wspr", "fsk"]
+extension_modes = ["drm", "fax", "wspr", "fsk", "hfdl", "loran_c", "navtext", "sstv", "tdoa"]
 frequency_blacklist = [6160, 30000]
 debug = True
 counter = 0
