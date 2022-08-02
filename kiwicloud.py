@@ -15,6 +15,8 @@ parser.add_option("-s", "--server", type=str,
                   help="server name", dest="server", default='192.168.2.25')
 parser.add_option("-p", "--port", type=int,
                   help="port number", dest="port", default=8073)
+parser.add_option("-d", "--debug", type=int,
+                  help="debug", dest="debug")
 
 options = vars(parser.parse_args()[0])
 
@@ -22,6 +24,13 @@ if 'filename' in options:
     filename = options['filename']
 else:
     filename = "kiwisqlite.db"
+
+if 'debug' in options:
+    if options['debug'] == 1:
+        debug = True
+    else:
+        debug = False
+
 
 host = options['server']
 port = options['port']
