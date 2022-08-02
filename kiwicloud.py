@@ -33,13 +33,16 @@ ident_blacklist = ["digiskr_0.35.1", "SNR-measure", "dg7lan"]
 ident_skimmer = "digiskr_0.35.1"
 extension_modes = ["drm", "fax", "wspr", "fsk", "hfdl", "loran_c", "navtext", "sstv", "tdoa"]
 frequency_blacklist = [6160, 30000]
+
+# wait n seconds between polling data - don't recommend setting it to less than 30s
+polldelay = 30
 debug = True
+
+# don't change below
 counter = 0
 inuse_human = 0
 inuse_skimmer = 0
 inuse_idle = 0
-
-print("Kiwi Server is: " + kiwiserverurl)
 
 
 class db:
@@ -130,6 +133,7 @@ database = db(sqlitepath)
 
 while 1:
     os.system('clear')
+    print("|----------> Server: " + kiwiserverurl)
     now = datetime.datetime.now()
     print("|---------->", now.strftime("%H:%M:%S"))
 
@@ -157,7 +161,6 @@ while 1:
                 extension = item.get('e').lower()
                 slot = item.get('i')
 
-                # todo: blacklist initialfrequency shouldnt be fixed 6160!
                 if not username in ident_blacklist and not frequency in frequency_blacklist:
                     if extension in extension_modes and len(extension) > 0:
                         if debug:
@@ -181,4 +184,4 @@ while 1:
         create_cloud("usercloud.png", userdata)
     if geodata:
         create_cloud("geocloud.png", geodata)
-    time.sleep(30)
+    time.sleep(polldelay)
