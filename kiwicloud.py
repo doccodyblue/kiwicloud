@@ -43,6 +43,8 @@ ident_skimmer = "digiskr_0.35.1"
 extension_modes = ["drm", "fax", "wspr", "fsk", "hfdl", "loran_c", "navtext", "sstv", "tdoa"]
 frequency_blacklist = [6160, 30000]
 
+#todo : prevent crashing on network problems
+
 # wait n seconds between polling data - don't recommend setting it to less than 30s
 polldelay = 30
 
@@ -174,6 +176,10 @@ while 1:
                         if debug:
                             print("|----> swapped mode", mode, "for", extension)
                         mode = extension.upper()
+                    if mode == "lsn":
+                        mode = "LSB"
+                    if mode == "usn":
+                        mode = "USB"
 
                     conhash = database.add(slot, frequency, mode, username=username, location=geo, extension=extension)
                 else:
