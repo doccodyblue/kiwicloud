@@ -12,7 +12,7 @@ from optparse import OptionParser
 
 parser = OptionParser()
 parser.add_option("-s", "--server", type=str,
-                  help="server name", dest="server", default='192.168.2.25')
+                  help="server name", dest="server", default='192.168.2.125')
 parser.add_option("-p", "--port", type=int,
                   help="port number", dest="port", default=8073)
 parser.add_option("-d", "--debug", type=int,
@@ -42,8 +42,6 @@ ident_blacklist = ["digiskr_0.35.1", "SNR-measure", "dg7lan"]
 ident_skimmer = "digiskr_0.35.1"
 extension_modes = ["drm", "fax", "wspr", "fsk", "hfdl", "loran_c", "navtext", "sstv", "tdoa"]
 frequency_blacklist = [6160, 30000]
-
-#todo : prevent crashing on network problems
 
 # wait n seconds between polling data - don't recommend setting it to less than 30s
 polldelay = 30
@@ -127,7 +125,10 @@ class db:
 
 
 def get_json(url):
-    r = requests.get(url=url)
+    try:
+        r = requests.get(url=url, timeout=10)
+    except requests.exceptions.RequestException as e:
+        r = False
     return r
 
 
@@ -148,54 +149,59 @@ while 1:
     print("|---------->", now.strftime("%H:%M:%S"))
 
     jdata = get_json(kiwiserverurl)
-    cont = json.loads(jdata.content.decode())
-    for item in cont:
-        counter += 1
-        if not item.get('f') is None:
-            # slot is in use
-            username = item.get('n')
-            if username == "":
-                username = "unknown"
-            printqrg = int(item.get('f')/1000)
-            print("Slot", item.get('i'), "on", printqrg, "in use by", username)
-            #print("{:10.4f}".format(x))
-            if item.get('n') in ident_skimmer and len(item.get('n')) >0:
-                inuse_skimmer += 1
+    if jdata:
+        cont = json.loads(jdata.content.decode())
+        for item in cont:
+            counter += 1
+            if not item.get('f') is None:
+                # slot is in use
+                username = item.get('n')
+                if username == "":
+                    username = "unknown"
+                printqrg = int(item.get('f')/1000)
+                print("Slot", item.get('i'), "on", printqrg, "in use by", username)
+                #print("{:10.4f}".format(x))
+                if item.get('n') in ident_skimmer and len(item.get('n')) >0:
+                    inuse_skimmer += 1
 
-            else:
-                inuse_human += 1
-                frequency = int(item.get('f') / 1000)
-                geo = item.get('g')
-                geo = urllib.parse.unquote(geo)
-                mode = item.get('m').lower()
-                extension = item.get('e').lower()
-                slot = item.get('i')
-
-                if not username in ident_blacklist and not frequency in frequency_blacklist:
-                    if extension in extension_modes and len(extension) > 0:
-                        if debug:
-                            print("|----> swapped mode", mode, "for", extension)
-                        mode = extension.upper()
-                    if mode == "lsn":
-                        mode = "LSB"
-                    if mode == "usn":
-                        mode = "USB"
-
-                    conhash = database.add(slot, frequency, mode, username=username, location=geo, extension=extension)
                 else:
-                    if debug:
-                        print("|---->", username, " / ", frequency," prevented due blacklist")
-        else:
-            print("Slot", item.get('i'), "is idle")
-            inuse_idle += 1
+                    inuse_human += 1
+                    frequency = int(item.get('f') / 1000)
+                    geo = item.get('g')
+                    geo = urllib.parse.unquote(geo)
+                    mode = item.get('m').lower()
+                    extension = item.get('e').lower()
+                    slot = item.get('i')
 
-    qrgdata = database.readQrgFrequency()
-    userdata = database.readUserData()
-    geodata = database.readGeoData()
-    if qrgdata:
-        create_cloud("qrgcloud.png", qrgdata)
-    if userdata:
-        create_cloud("usercloud.png", userdata)
-    if geodata:
-        create_cloud("geocloud.png", geodata)
-    time.sleep(polldelay)
+                    if not username in ident_blacklist and not frequency in frequency_blacklist:
+                        if extension in extension_modes and len(extension) > 0:
+                            if debug:
+                                print("|----> swapped mode", mode, "for", extension)
+                            mode = extension.upper()
+                        if mode == "lsn":
+                            mode = "LSB"
+                        if mode == "usn":
+                            mode = "USB"
+
+                        conhash = database.add(slot, frequency, mode, username=username, location=geo, extension=extension)
+                    else:
+                        if debug:
+                            print("|---->", username, " / ", frequency," prevented due blacklist")
+            else:
+                print("Slot", item.get('i'), "is idle")
+                inuse_idle += 1
+
+        qrgdata = database.readQrgFrequency()
+        userdata = database.readUserData()
+        geodata = database.readGeoData()
+        if qrgdata:
+            create_cloud("qrgcloud.png", qrgdata)
+        if userdata:
+            create_cloud("usercloud.png", userdata)
+        if geodata:
+            create_cloud("geocloud.png", geodata)
+        time.sleep(polldelay)
+    else:
+        print("request failed. waiting 120s....")
+        time.sleep(120)
+
