@@ -12,7 +12,7 @@ from optparse import OptionParser
 
 parser = OptionParser()
 parser.add_option("-s", "--server", type=str,
-                  help="server name", dest="server", default='192.168.2.125')
+                  help="server name", dest="server", default='192.168.2.25')
 parser.add_option("-p", "--port", type=int,
                   help="port number", dest="port", default=8073)
 parser.add_option("-d", "--debug", type=int,
