@@ -173,7 +173,7 @@ while 1:
                     extension = item.get('e').lower()
                     slot = item.get('i')
 
-                    if not username in ident_blacklist and not frequency in frequency_blacklist:
+                    if not username.lower() in ident_blacklist and not frequency in frequency_blacklist:
                         if extension in extension_modes and len(extension) > 0:
                             if debug:
                                 print("|----> swapped mode", mode, "for", extension)
