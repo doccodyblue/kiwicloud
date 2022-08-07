@@ -38,10 +38,11 @@ kiwiserverurl = "http://" + host + ":" + str(port) + "/users"
 
 # this is to prevent getting specific things into the statistics
 # i.e. skimmer, you own call, ...
-ident_blacklist = ["digiskr_0.35.1", "SNR-measure", "dg7lan"]
+# needs to be in lowercase
+ident_blacklist = ["digiskr_0.35.1", "snr-measure", "dg7lan"]
 ident_skimmer = "digiskr_0.35.1"
 extension_modes = ["drm", "fax", "wspr", "fsk", "hfdl", "loran_c", "navtext", "sstv", "tdoa"]
-frequency_blacklist = [6160, 30000]
+frequency_blacklist = [30000]
 
 # wait n seconds between polling data - don't recommend setting it to less than 30s
 polldelay = 30
@@ -173,7 +174,7 @@ while 1:
                     extension = item.get('e').lower()
                     slot = item.get('i')
 
-                    if not username.lower() in ident_blacklist.lower() and not frequency in frequency_blacklist:
+                    if not username.lower() in ident_blacklist and not frequency in frequency_blacklist:
                         if extension in extension_modes and len(extension) > 0:
                             if debug:
                                 print("|----> swapped mode", mode, "for", extension)
