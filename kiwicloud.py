@@ -105,7 +105,7 @@ class db:
         return conhash
 
     def readQrgFrequency(self):
-        self.cursor.execute("SELECT frequency || ' ' || upper(mode), counter FROM qrgstat LIMIT 12")
+        self.cursor.execute("SELECT frequency || ' ' || upper(mode), counter FROM qrgstat ORDER BY counter DESC LIMIT 16")
         data = self.cursor.fetchall()
         return dict(data)
 
