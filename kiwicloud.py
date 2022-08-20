@@ -41,7 +41,7 @@ kiwiserverurl = "http://" + host + ":" + str(port) + "/users"
 # this is to prevent getting specific things into the statistics
 # i.e. skimmer, you own call, ...
 # needs to be in lowercase
-ident_blacklist = ["digiskr_0.35.1", "snr-measure", "dg7lan", "dg7lan-p", "xyxc", "kiwirecorder.py"]
+ident_blacklist = ["digiskr_0.35.1", "snr-measure", "dg7lan", "dg7lan-p", "xyxc", "kiwirecorder.py", "supersdr"]
 ident_skimmer = "digiskr_0.35.1"
 extension_modes = ["drm", "fax", "wspr", "fsk", "hfdl", "loran_c", "navtext", "sstv", "tdoa"]
 frequency_blacklist = [30000]
@@ -54,6 +54,7 @@ counter = 0
 inuse_human = 0
 inuse_skimmer = 0
 inuse_idle = 0
+hidden = 0
 
 
 class db:
