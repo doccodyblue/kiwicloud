@@ -10,6 +10,8 @@ import os
 from wordcloud import WordCloud
 from optparse import OptionParser
 
+
+### todo: change old database structure and add "hidden" flag
 parser = OptionParser()
 parser.add_option("-s", "--server", type=str,
                   help="server name", dest="server", default='192.168.2.25')
@@ -39,7 +41,7 @@ kiwiserverurl = "http://" + host + ":" + str(port) + "/users"
 # this is to prevent getting specific things into the statistics
 # i.e. skimmer, you own call, ...
 # needs to be in lowercase
-ident_blacklist = ["digiskr_0.35.1", "snr-measure", "dg7lan"]
+ident_blacklist = ["digiskr_0.35.1", "snr-measure", "dg7lan", "dg7lan-p", "xyxc", "kiwirecorder.py"]
 ident_skimmer = "digiskr_0.35.1"
 extension_modes = ["drm", "fax", "wspr", "fsk", "hfdl", "loran_c", "navtext", "sstv", "tdoa"]
 frequency_blacklist = [30000]
@@ -62,7 +64,7 @@ class db:
 
         self.newDB()
 
-    def add(self, slot, frequency, mode, username, location="", extension=""):
+    def add(self, slot, frequency, mode, username, hidden, location="", extension=""):
         if debug:
             print("|----> adding to QRGstat:", username, frequency, geo, mode)
         conhash = str(uuid.uuid4())[:8]
@@ -96,16 +98,16 @@ class db:
         data = self.cursor.fetchone()
         if not username == "unknown":
             if data is None:
-                self.conn.execute("INSERT INTO userstat (user, geo, extension, counter) VALUES (?, ?, ?, 1)", (str(username.lower()), str(location), str(extension)))
+                self.conn.execute("INSERT INTO userstat (user, geo, extension, counter, hidden) VALUES (?, ?, ?, 1, ?)", (str(username.lower()), str(location), str(extension), str(hidden)))
             else:
                 self.conn.execute("UPDATE userstat SET counter = counter +1 WHERE user = ?", (username.lower(),))
-                self.conn.execute("UPDATE userstat SET geo = ?, extension = ? WHERE user = ?", (location, extension, username.lower()))
+                self.conn.execute("UPDATE userstat SET geo = ?, extension = ?, hidden = ? WHERE user = ?", (location, extension, hidden, username.lower()))
 
             self.conn.commit()
         return conhash
 
     def readQrgFrequency(self):
-        self.cursor.execute("SELECT frequency || '' || lower(mode), counter FROM qrgstat ORDER BY counter DESC LIMIT 16")
+        self.cursor.execute("SELECT frequency || '' || lower(mode), counter FROM qrgstat ORDER BY counter DESC LIMIT 10")
         data = self.cursor.fetchall()
         return dict(data)
 
@@ -120,9 +122,9 @@ class db:
         return dict(data)
 
     def newDB(self):
-        self.conn.execute("CREATE TABLE IF NOT EXISTS qrgstat (frequency TEXT(5), mode TEXT(5), counter INTEGER(12))")
-        self.conn.execute("CREATE TABLE IF NOT EXISTS userstat (user TEXT(15), geo TEXT(40), extension TEXT(10), counter INTEGER(12))")
-        self.conn.execute("CREATE TABLE IF NOT EXISTS geostat (geo TEXT(40), counter INTEGER(12))")
+        self.conn.execute("CREATE TABLE IF NOT EXISTS qrgstat (frequency TEXT(5), mode TEXT(5), counter INTEGER(12), hidden INTEGER(1))")
+        self.conn.execute("CREATE TABLE IF NOT EXISTS userstat (user TEXT(15), geo TEXT(40), extension TEXT(10), counter INTEGER(12), hidden INTEGER(1))")
+        self.conn.execute("CREATE TABLE IF NOT EXISTS geostat (geo TEXT(40), counter INTEGER(12), hidden INTEGER(1))")
 
 
 def get_json(url):
@@ -179,12 +181,19 @@ while 1:
                             if debug:
                                 print("|----> swapped mode", mode, "for", extension)
                             mode = extension.upper()
-                        if mode == "lsn":
+                        if mode.upper() == "LSN":
                             mode = "LSB"
-                        if mode == "usn":
+                        if mode.upper() == "USN":
                             mode = "USB"
+                        if mode.upper() == "AMN":
+                            mode = "AM"
 
-                        conhash = database.add(slot, frequency, mode, username=username, location=geo, extension=extension)
+                        if extension == "CW_decoder":
+                            mode = "CW"
+                        if len(username) < 3:
+                            hidden = 1
+                            
+                        conhash = database.add(slot, frequency, mode, username=username, hidden=hidden, location=geo, extension=extension)
                     else:
                         if debug:
                             print("|---->", username, " / ", frequency," prevented due blacklist")
