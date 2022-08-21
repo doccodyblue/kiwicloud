@@ -103,7 +103,8 @@ class db:
             else:
                 self.conn.execute("UPDATE userstat SET counter = counter +1 WHERE user = ?", (username.lower(),))
                 self.conn.execute("UPDATE userstat SET geo = ?, extension = ?, hidden = ? WHERE user = ?", (location, extension, hidden, username.lower()))
-
+p
+            self.conn.execute("UPDATE userstat SET sqltime = ? WHERE user = ?", (time.time(), username.lower()))
             self.conn.commit()
         return conhash
 
