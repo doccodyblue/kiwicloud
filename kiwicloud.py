@@ -68,8 +68,8 @@ class db:
     def add(self, slot, frequency, mode, username, hidden, location="", extension=""):
         if debug:
             print("|----> adding to QRGstat:", username, frequency, geo, mode)
-        username = username.decode("UTF-8")
-        geo = geo.decode("UTF-8")
+        #username = username.decode("UTF-8")
+        #geo = geo.decode("UTF-8")
 
         conhash = str(uuid.uuid4())[:8]
 
