@@ -103,7 +103,7 @@ class db:
             else:
                 self.conn.execute("UPDATE userstat SET counter = counter +1 WHERE user = ?", (username.lower(),))
                 self.conn.execute("UPDATE userstat SET geo = ?, extension = ?, hidden = ? WHERE user = ?", (location, extension, hidden, username.lower()))
-p
+
             self.conn.execute("UPDATE userstat SET sqltime = ? WHERE user = ?", (time.time(), username.lower()))
             self.conn.commit()
         return conhash
@@ -120,6 +120,11 @@ p
 
     def readGeoData(self):
         self.cursor.execute("SELECT geo, counter FROM geostat")
+        data = self.cursor.fetchall()
+        return dict(data)
+
+    def readLastUser(self):
+        self.cursor.execute("SELECT user, sqltime FROM userstat WHERE NOT hidden ='1' ORDER BY sqltime DESC limit 5")
         data = self.cursor.fetchall()
         return dict(data)
 
@@ -202,6 +207,14 @@ while 1:
             else:
                 print("Slot", item.get('i'), "is idle")
                 inuse_idle += 1
+
+        lastlogin = database.readLastUser()
+        for user in lastlogin:
+            if lastlogin[user]:
+                ts = datetime.datetime.fromtimestamp(lastlogin[user])
+            else:
+                ts = "unknown"
+            print("User: ", user, "Time: ", ts)
 
         qrgdata = database.readQrgFrequency()
         userdata = database.readUserData()
