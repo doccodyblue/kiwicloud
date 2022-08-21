@@ -73,11 +73,12 @@ class db:
         self.cursor.execute("SELECT counter FROM qrgstat WHERE frequency = ? AND mode = ?", (str(frequency),mode.lower()))
         data = self.cursor.fetchone()
         if data is None:
-            self.conn.execute("INSERT INTO qrgstat (frequency, mode, counter) VALUES (?, ?, 1)",
-                              (frequency, mode.lower()))
+            self.conn.execute("INSERT INTO qrgstat (frequency, mode, counter, sqltime) VALUES (?, ?, 1, ?)",
+                              (frequency, mode.lower(), time.time()))
         else:
             print("|----> adding to QRGstat:", frequency)
             self.conn.execute("UPDATE qrgstat SET counter = counter +1 WHERE frequency = ? AND mode = ?", (str(frequency), mode.lower()))
+            self.conn.execute("UPDATE qrgstat SET sqltime = ? WHERE frequency = ?", (time.time(), str(frequency)))
 
         self.conn.commit()
 
@@ -105,6 +106,7 @@ class db:
                 self.conn.execute("UPDATE userstat SET geo = ?, extension = ?, hidden = ? WHERE user = ?", (location, extension, hidden, username.lower()))
 
             self.conn.execute("UPDATE userstat SET sqltime = ? WHERE user = ?", (time.time(), username.lower()))
+
             self.conn.commit()
         return conhash
 
@@ -129,10 +131,9 @@ class db:
         return dict(data)
 
     def newDB(self):
-        self.conn.execute("CREATE TABLE IF NOT EXISTS qrgstat (frequency TEXT(5), mode TEXT(5), counter INTEGER(12), hidden INTEGER(1))")
-        self.conn.execute("CREATE TABLE IF NOT EXISTS userstat (user TEXT(15), geo TEXT(40), extension TEXT(10), counter INTEGER(12), hidden INTEGER(1))")
+        self.conn.execute("CREATE TABLE IF NOT EXISTS qrgstat (frequency TEXT(5), mode TEXT(5), counter INTEGER(12), hidden INTEGER(1), sqltime TIMESTAMP)")
+        self.conn.execute("CREATE TABLE IF NOT EXISTS userstat (user TEXT(15), geo TEXT(40), extension TEXT(10), counter INTEGER(12), hidden INTEGER(1), sqltime TIMESTAMP)")
         self.conn.execute("CREATE TABLE IF NOT EXISTS geostat (geo TEXT(40), counter INTEGER(12), hidden INTEGER(1))")
-
 
 def get_json(url):
     try:
