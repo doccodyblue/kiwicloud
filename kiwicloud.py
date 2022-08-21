@@ -68,6 +68,9 @@ class db:
     def add(self, slot, frequency, mode, username, hidden, location="", extension=""):
         if debug:
             print("|----> adding to QRGstat:", username, frequency, geo, mode)
+        username = username.decode("UTF-8")
+        geo = geo.decode("UTF-8")
+
         conhash = str(uuid.uuid4())[:8]
 
         self.cursor.execute("SELECT counter FROM qrgstat WHERE frequency = ? AND mode = ?", (str(frequency),mode.lower()))
@@ -210,12 +213,13 @@ while 1:
                 inuse_idle += 1
 
         lastlogin = database.readLastUser()
+        print("|-----------> Last users")
         for user in lastlogin:
             if lastlogin[user]:
                 ts = datetime.datetime.fromtimestamp(lastlogin[user])
             else:
                 ts = "unknown"
-            print("User: ", user, "Time: ", ts)
+            print("%12s %s" % (user, ts))
 
         qrgdata = database.readQrgFrequency()
         userdata = database.readUserData()
