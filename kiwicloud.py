@@ -7,6 +7,7 @@ import time
 import datetime
 import uuid
 import os
+import urllib.parse
 from wordcloud import WordCloud
 from optparse import OptionParser
 
@@ -70,6 +71,9 @@ class db:
             print("|----> adding to QRGstat:", username, frequency, geo, mode)
 
         conhash = str(uuid.uuid4())[:8]
+
+        username = urllib.parse.unquote(username)
+        location = urllib.parse.unquote(location)
 
         self.cursor.execute("SELECT counter FROM qrgstat WHERE frequency = ? AND mode = ?", (str(frequency),mode.lower()))
         data = self.cursor.fetchone()
