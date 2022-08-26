@@ -221,7 +221,7 @@ while 1:
                 ts = datetime.datetime.fromtimestamp(lastlogin[user])
             else:
                 ts = "unknown"
-            print("%12s %s" % (user, ts))
+            print("%16s %s" % (user, ts))
 
         qrgdata = database.readQrgFrequency()
         userdata = database.readUserData()
