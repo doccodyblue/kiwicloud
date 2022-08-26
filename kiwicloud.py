@@ -116,22 +116,22 @@ class db:
         return conhash
 
     def readQrgFrequency(self):
-        self.cursor.execute("SELECT frequency || '' || lower(mode), counter FROM qrgstat ORDER BY counter DESC LIMIT 10")
+        self.cursor.execute("SELECT frequency || '' || lower(mode), counter FROM qrgstat WHERE hidden IS NOT '1' ORDER BY counter DESC LIMIT 10")
         data = self.cursor.fetchall()
         return dict(data)
 
     def readUserData(self):
-        self.cursor.execute("SELECT upper(user), counter FROM userstat")
+        self.cursor.execute("SELECT upper(user), counter FROM userstat WHERE hidden IS NOT '1'")
         data = self.cursor.fetchall()
         return dict(data)
 
     def readGeoData(self):
-        self.cursor.execute("SELECT geo, counter FROM geostat")
+        self.cursor.execute("SELECT geo, counter FROM geostat WHERE hidden IS NOT '1'")
         data = self.cursor.fetchall()
         return dict(data)
 
     def readLastUser(self):
-        self.cursor.execute("SELECT user, sqltime FROM userstat WHERE NOT hidden ='1' ORDER BY sqltime DESC limit 5")
+        self.cursor.execute("SELECT user, sqltime FROM userstat WHERE hidden IS NOT '1' ORDER BY sqltime DESC limit 5")
         data = self.cursor.fetchall()
         return dict(data)
 
