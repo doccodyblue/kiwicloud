@@ -42,7 +42,7 @@ kiwiserverurl = "http://" + host + ":" + str(port) + "/users"
 # this is to prevent getting specific things into the statistics
 # i.e. skimmer, you own call, ...
 # needs to be in lowercase
-ident_blacklist = ["digiskr_0.35.1", "snr-measure", "dg7lan", "dg7lan-p", "xyxc", "kiwirecorder.py", "supersdr", "wspr-autorun"]
+ident_blacklist = ["digiskr_0.35.1", "snr-measure", "dg7lan", "dg7lan-p", "xyxc", "kiwirecorder.py", "supersdr", "wspr-autorun", "tdoa_service", "(no identity)", "???"]
 ident_skimmer = "digiskr_0.35.1"
 extension_modes = ["drm", "fax", "wspr", "fsk", "hfdl", "loran_c", "navtext", "sstv", "tdoa"]
 frequency_blacklist = [30000]
@@ -66,9 +66,9 @@ class db:
 
         self.newDB()
 
-    def add(self, slot, frequency, mode, username, hidden, location="", extension=""):
+    def add(self, slot, frequency, mode, username, hidden, location="", extension="", ip=""):
         if debug:
-            print("|----> adding to QRGstat:", username, frequency, geo, mode)
+            print("|----> adding to QRGstat:", username, frequency, geo, mode, hidden)
 
         conhash = str(uuid.uuid4())[:8]
 
@@ -105,10 +105,10 @@ class db:
         data = self.cursor.fetchone()
         if not username == "unknown":
             if data is None:
-                self.conn.execute("INSERT INTO userstat (user, geo, extension, counter, hidden) VALUES (?, ?, ?, 1, ?)", (str(username.lower()), str(location), str(extension), str(hidden)))
+                self.conn.execute("INSERT INTO userstat (user, geo, extension, counter, hidden, ip) VALUES (?, ?, ?, 1, ?, ?)", (str(username.lower()), str(location), str(extension), hidden, str(ip)))
             else:
                 self.conn.execute("UPDATE userstat SET counter = counter +1 WHERE user = ?", (username.lower(),))
-                self.conn.execute("UPDATE userstat SET geo = ?, extension = ?, hidden = ? WHERE user = ?", (location, extension, hidden, username.lower()))
+                self.conn.execute("UPDATE userstat SET geo = ?, extension = ?, hidden = ?, ip = ? WHERE user = ?", (location, extension, hidden, ip, username.lower()))
 
             self.conn.execute("UPDATE userstat SET sqltime = ? WHERE user = ?", (time.time(), username.lower()))
 
@@ -131,13 +131,14 @@ class db:
         return dict(data)
 
     def readLastUser(self):
-        self.cursor.execute("SELECT user, sqltime FROM userstat WHERE hidden IS NOT '1' ORDER BY sqltime DESC limit 5")
-        data = self.cursor.fetchall()
-        return dict(data)
+        c = self.cursor.execute("SELECT user, ip, sqltime FROM userstat WHERE hidden IS NOT '1' ORDER BY sqltime DESC limit 5")
+        #data = self.cursor.fetchall()
+        #return dict(data)
+        return c
 
     def newDB(self):
         self.conn.execute("CREATE TABLE IF NOT EXISTS qrgstat (frequency TEXT(5), mode TEXT(5), counter INTEGER(12), hidden INTEGER(1), sqltime TIMESTAMP)")
-        self.conn.execute("CREATE TABLE IF NOT EXISTS userstat (user TEXT(15), geo TEXT(40), extension TEXT(10), counter INTEGER(12), hidden INTEGER(1), sqltime TIMESTAMP)")
+        self.conn.execute("CREATE TABLE IF NOT EXISTS userstat (user TEXT(15), geo TEXT(40), extension TEXT(10), counter INTEGER(12), hidden INTEGER(1), ip TEXT(16), sqltime TIMESTAMP)")
         self.conn.execute("CREATE TABLE IF NOT EXISTS geostat (geo TEXT(40), counter INTEGER(12), hidden INTEGER(1))")
 
 def get_json(url):
@@ -163,7 +164,7 @@ while 1:
     print("|----------> Server: " + kiwiserverurl)
     now = datetime.datetime.now()
     print("|---------->", now.strftime("%H:%M:%S"))
-
+    hidden = 0
     jdata = get_json(kiwiserverurl)
     if jdata:
         cont = json.loads(jdata.content.decode())
@@ -172,14 +173,14 @@ while 1:
             if not item.get('f') is None:
                 # slot is in use
                 username = item.get('n')
+                ip = item.get('a')
                 if username == "":
                     username = "unknown"
                 printqrg = int(item.get('f')/1000)
                 print("Slot", item.get('i'), "on", printqrg, "in use by", username)
-                #print("{:10.4f}".format(x))
+
                 if item.get('n') in ident_skimmer and len(item.get('n')) >0:
                     inuse_skimmer += 1
-
                 else:
                     inuse_human += 1
                     frequency = int(item.get('f') / 1000)
@@ -196,9 +197,9 @@ while 1:
                             mode = extension.upper()
                         if mode.upper() == "LSN":
                             mode = "LSB"
-                        if mode.upper() == "USN":
+                        elif mode.upper() == "USN":
                             mode = "USB"
-                        if mode.upper() == "AMN":
+                        elif mode.upper() == "AMN":
                             mode = "AM"
 
                         if extension == "CW_decoder":
@@ -206,7 +207,7 @@ while 1:
                         if len(username) < 3:
                             hidden = 1
                             
-                        conhash = database.add(slot, frequency, mode, username=username, hidden=hidden, location=geo, extension=extension)
+                        conhash = database.add(slot, frequency, mode, username=username, hidden=hidden, location=geo, extension=extension, ip=ip)
                     else:
                         if debug:
                             print("|---->", username, " / ", frequency," prevented due blacklist")
@@ -216,12 +217,12 @@ while 1:
 
         lastlogin = database.readLastUser()
         print("|-----------> Last users")
-        for user in lastlogin:
-            if lastlogin[user]:
-                ts = datetime.datetime.fromtimestamp(lastlogin[user])
+        for user, ip, ts in lastlogin:
+            if ts:
+                ts = datetime.datetime.fromtimestamp(ts)
             else:
                 ts = "unknown"
-            print("%16s %s" % (user, ts))
+            print("%16s %15s %s" % (user, ip, ts))
 
         qrgdata = database.readQrgFrequency()
         userdata = database.readUserData()
