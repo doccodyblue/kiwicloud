@@ -13,7 +13,6 @@ from optparse import OptionParser
 from mqttinform import MQTTInform
 
 
-### todo: change old database structure and add "hidden" flag
 parser = OptionParser()
 parser.add_option("-s", "--server", type=str,
                   help="server name", dest="server", default='192.168.2.25')
@@ -37,6 +36,10 @@ if 'debug' in options:
     else:
         debug = False
 
+if 'mqtt_server' in options:
+    mqtt_server = options['mqtt_server']
+else:
+    mqtt_server = False
 
 host = options['server']
 port = options['port']
