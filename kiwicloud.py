@@ -165,7 +165,11 @@ sqlitepath = pathlib.Path(filename)
 database = db(sqlitepath)
 
 if mqtt_server:
-    mqtt = MQTTInform(mqtt_server)
+    try:
+        mqtt = MQTTInform(mqtt_server)
+    except:
+        print("MQTT server unreachable:", mqtt_server, "--> MQTT disabled!")
+        mqtt_server = False
 
 while 1:
     os.system('clear')
@@ -187,10 +191,11 @@ while 1:
                     username = "unknown"
                 printqrg = int(item.get('f')/1000)
                 print("Slot", item.get('i'), "on", printqrg, "in use by", username)
-                try:
-                    mqtt.Inform(int(item.get('i')), username, printqrg)
-                except:
-                    print('ERROR MQTT')
+                if mqtt_server:
+                    try:
+                        mqtt.Inform(int(item.get('i')), username, printqrg)
+                    except:
+                        print('ERROR sending MQTT info to', mqtt_server)
 
                 if item.get('n') in ident_skimmer and len(item.get('n')) >0:
                     inuse_skimmer += 1
@@ -225,11 +230,11 @@ while 1:
                         if debug:
                             print("|---->", username, " / ", frequency," prevented due blacklist")
             else:
-                print("Slot", item.get('i'), "is idle")
-                try:
-                    mqtt.Inform(int(item.get('i')), "idle", "")
-                except:
-                    print("ERROR MQTT")
+                if mqtt_server:
+                    try:
+                        mqtt.Inform(int(item.get('i')), "idle", "")
+                    except:
+                        print('ERROR sending MQTT info to', mqtt_server)
 
                 inuse_idle += 1
 
