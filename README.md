@@ -15,7 +15,7 @@ git clone https://github.com/doccodyblue/kiwicloud.git
 cd to your kiwicloud directory  
 ```cd kiwicloud```
 
-```python3 kiwicloud.py -s [serverurl] -p [serverport] -d [0|1]``` 
+```python3 kiwicloud.py -s [serverurl] -p [serverport] -d [0|1] -m [mqtt_server_ip]``` 
 
 ### Example
 ```python3 kiwicloud.py -s 192.168.1.2 -p 8073 -d 1``` 
@@ -40,3 +40,5 @@ and attach to the session with
 
 In the terminal it looks like this: (can be run in background, i use tmux for that)
 <img width="573" alt="image" src="https://user-images.githubusercontent.com/20392230/182165331-bb9acb94-64d0-4562-838d-bccd1af38623.png">
+
+The MQTT feature is optional and only used to report the ports in use to my smarthome display :-)
