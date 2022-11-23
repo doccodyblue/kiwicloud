@@ -10,9 +10,9 @@ import os
 import urllib.parse
 from wordcloud import WordCloud
 from optparse import OptionParser
+from mqttinform import MQTTInform
 
 
-### todo: change old database structure and add "hidden" flag
 parser = OptionParser()
 parser.add_option("-s", "--server", type=str,
                   help="server name", dest="server", default='192.168.2.25')
@@ -20,6 +20,8 @@ parser.add_option("-p", "--port", type=int,
                   help="port number", dest="port", default=8073)
 parser.add_option("-d", "--debug", type=int,
                   help="debug", dest="debug")
+parser.add_option("-m", "--mqtt", type=str,
+                  help="mqtt", dest="mqtt_server")
 
 options = vars(parser.parse_args()[0])
 
@@ -34,6 +36,10 @@ if 'debug' in options:
     else:
         debug = False
 
+if 'mqtt_server' in options:
+    mqtt_server = options['mqtt_server']
+else:
+    mqtt_server = False
 
 host = options['server']
 port = options['port']
@@ -78,8 +84,8 @@ class db:
         self.cursor.execute("SELECT counter FROM qrgstat WHERE frequency = ? AND mode = ?", (str(frequency),mode.lower()))
         data = self.cursor.fetchone()
         if data is None:
-            self.conn.execute("INSERT INTO qrgstat (frequency, mode, counter, sqltime) VALUES (?, ?, 1, ?)",
-                              (frequency, mode.lower(), time.time()))
+            self.conn.execute("INSERT INTO qrgstat (frequency, mode, counter, hidden, sqltime) VALUES (?, ?, 1, ?, ?)",
+                              (frequency, mode.lower(), hidden, time.time()))
         else:
             print("|----> adding to QRGstat:", frequency)
             self.conn.execute("UPDATE qrgstat SET counter = counter +1 WHERE frequency = ? AND mode = ?", (str(frequency), mode.lower()))
@@ -156,8 +162,14 @@ def create_cloud(filename, qrgs):
 
 
 sqlitepath = pathlib.Path(filename)
-
 database = db(sqlitepath)
+
+if mqtt_server:
+    try:
+        mqtt = MQTTInform(mqtt_server)
+    except:
+        print("MQTT server unreachable:", mqtt_server, "--> MQTT disabled!")
+        mqtt_server = False
 
 while 1:
     os.system('clear')
@@ -170,6 +182,7 @@ while 1:
         cont = json.loads(jdata.content.decode())
         for item in cont:
             counter += 1
+
             if not item.get('f') is None:
                 # slot is in use
                 username = item.get('n')
@@ -178,6 +191,11 @@ while 1:
                     username = "unknown"
                 printqrg = int(item.get('f')/1000)
                 print("Slot", item.get('i'), "on", printqrg, "in use by", username)
+                if mqtt_server:
+                    try:
+                        mqtt.Inform(int(item.get('i')), username, printqrg)
+                    except:
+                        print('ERROR sending MQTT info to', mqtt_server)
 
                 if item.get('n') in ident_skimmer and len(item.get('n')) >0:
                     inuse_skimmer += 1
@@ -212,7 +230,12 @@ while 1:
                         if debug:
                             print("|---->", username, " / ", frequency," prevented due blacklist")
             else:
-                print("Slot", item.get('i'), "is idle")
+                if mqtt_server:
+                    try:
+                        mqtt.Inform(int(item.get('i')), "idle", "")
+                    except:
+                        print('ERROR sending MQTT info to', mqtt_server)
+
                 inuse_idle += 1
 
         lastlogin = database.readLastUser()
