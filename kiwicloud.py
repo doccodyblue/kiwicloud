@@ -127,7 +127,8 @@ class db:
         return dict(data)
 
     def readUserData(self):
-        self.cursor.execute("SELECT upper(user), counter FROM userstat WHERE hidden IS NOT '1'")
+        showtime = time.time() - 604800
+        self.cursor.execute("SELECT upper(user), counter FROM userstat WHERE hidden IS NOT '1' and sqltime > ?", (showtime, ))
         data = self.cursor.fetchall()
         return dict(data)
 
@@ -137,7 +138,7 @@ class db:
         return dict(data)
 
     def readLastUser(self):
-        c = self.cursor.execute("SELECT user, ip, sqltime FROM userstat WHERE hidden IS NOT '1' ORDER BY sqltime DESC limit 5")
+        c = self.cursor.execute("SELECT user, ip, sqltime FROM userstat WHERE hidden IS NOT '1' ORDER BY sqltime DESC limit 8 ")
         #data = self.cursor.fetchall()
         #return dict(data)
         return c
